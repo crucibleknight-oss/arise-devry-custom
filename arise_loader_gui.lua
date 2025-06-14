@@ -1,174 +1,175 @@
+-- Arise GUI Ultimate v2 - Mobile Friendly for Arceus X NEO 1.7.1
+-- Author: CrucibleKnight Custom for มือถือ (2025)
+-- Features: Auto Farm, Kill Aura, Shadow Clone AI, Auto Quest, Magnet, Toggle GUI, Anti-AFK
 
- -- Arise Crossover Loader GUI v1.0 by ChatGPT Thai Dev
+-- GLOBAL STATE
+getgenv().CFG = getgenv().CFG or {
+    AutoFarm = false,
+    KillAura = false,
+    ShadowClone = false,
+    AutoQuest = false,
+    Magnet = false
+}
 
-repeat wait() until game:IsLoaded() and game.Players.LocalPlayer and game.Players.LocalPlayer.Character
-
-local gui = Instance.new("ScreenGui", game.CoreGui)
-gui.Name = "AriseCrossoverUltimate"
-
-local openBtn = Instance.new("TextButton", gui)
-openBtn.Size = UDim2.new(0, 60, 0, 60)
-openBtn.Position = UDim2.new(0, 10, 0.5, -30)
-openBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-openBtn.Text = "⚙️"
-openBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-openBtn.Font = Enum.Font.GothamBold
-openBtn.TextSize = 22
-openBtn.BorderSizePixel = 0
-openBtn.Draggable = true
-
-local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0, 300, 0, 320)
-main.Position = UDim2.new(0, 80, 0.5, -160)
-main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-main.BorderColor3 = Color3.fromRGB(255, 215, 0)
-main.Visible = false
-
-local title = Instance.new("TextLabel", main)
-title.Size = UDim2.new(1, 0, 0, 30)
-title.Text = "🔥 Arise Crossover Loader"
-title.BackgroundColor3 = Color3.fromRGB(50, 0, 0)
-title.TextColor3 = Color3.fromRGB(255, 215, 0)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 16
-
-local function createBtn(txt, y, func)
-    local btn = Instance.new("TextButton", main)
-    btn.Size = UDim2.new(0, 260, 0, 40)
-    btn.Position = UDim2.new(0, 20, 0, y)
-    btn.Text = txt
-    btn.BackgroundColor3 = Color3.fromRGB(40, 20, 0)
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 14
-    btn.MouseButton1Click:Connect(func)
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Character = function()
+    return LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
 end
 
--- Variables
-local aura, magnet, pickup, skill, farming, clonespawned = false, false, false, false, false, false
+-- GUI
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+ScreenGui.Name = "Arise_GUI"
+local Frame = Instance.new("Frame", ScreenGui)
+Frame.Size = UDim2.new(0, 250, 0, 280)
+Frame.Position = UDim2.new(0, 30, 0, 150)
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.Active = true
+Frame.Draggable = true
 
--- Kill Aura
-createBtn("💥 Toggle Kill Aura", 40, function()
-    aura = not aura
-    if aura then
-        spawn(function()
-            while aura do
-                local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if hrp then
+local Title = Instance.new("TextLabel", Frame)
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Text = "Arise GUI Mobile"
+Title.TextColor3 = Color3.new(1,1,1)
+Title.BackgroundColor3 = Color3.fromRGB(50,50,50)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 16
+
+-- Helper: Create Toggle Button
+function makeToggle(name, posY, key)
+    local b = Instance.new("TextButton", Frame)
+    b.Size = UDim2.new(1, -10, 0, 30)
+    b.Position = UDim2.new(0, 5, 0, posY)
+    b.BackgroundColor3 = Color3.fromRGB(60,60,60)
+    b.TextColor3 = Color3.new(1,1,1)
+    b.Font = Enum.Font.Gotham
+    b.TextSize = 14
+    b.Text = name .. " [OFF]"
+
+    b.MouseButton1Click:Connect(function()
+        CFG[key] = not CFG[key]
+        b.Text = name .. (CFG[key] and " [ON]" or " [OFF]")
+    end)
+end
+
+makeToggle("Auto Farm", 40, "AutoFarm")
+makeToggle("Kill Aura", 75, "KillAura")
+makeToggle("Shadow Clone", 110, "ShadowClone")
+makeToggle("Auto Quest", 145, "AutoQuest")
+makeToggle("Magnet", 180, "Magnet")
+
+-- Close Button
+local Close = Instance.new("TextButton", Frame)
+Close.Size = UDim2.new(1, -10, 0, 25)
+Close.Position = UDim2.new(0, 5, 0, 230)
+Close.BackgroundColor3 = Color3.fromRGB(100,0,0)
+Close.Text = "Close GUI"
+Close.TextColor3 = Color3.new(1,1,1)
+Close.Font = Enum.Font.GothamBold
+Close.TextSize = 14
+Close.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- LOOP FUNCTIONS
+spawn(function() -- AutoFarm + KillAura
+    while true do wait(0.2)
+        if not CFG.AutoFarm and not CFG.KillAura then continue end
+        local char = Character()
+        local root = char:FindFirstChild("HumanoidRootPart")
+        if not root then continue end
+
+        for _, mob in pairs(workspace:GetDescendants()) do
+            if mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob:FindFirstChildOfClass("Tool") == nil then
+                local dist = (mob.HumanoidRootPart.Position - root.Position).magnitude
+                if dist < 50 then
+                    if CFG.AutoFarm then root.CFrame = mob.HumanoidRootPart.CFrame * CFrame.new(0, 0, 2) end
+                    if CFG.KillAura then
+                        pcall(function()
+                            mob.Humanoid:TakeDamage(5)
+                        end)
+                    end
+                end
+            end
+        end
+    end
+end)
+
+spawn(function() -- Shadow Clone AI
+    while true do wait(3)
+        if not CFG.ShadowClone then continue end
+        local char = Character()
+        local root = char:FindFirstChild("HumanoidRootPart")
+        if not root then continue end
+
+        for i = 1, 3 do
+            local clone = char:Clone()
+            clone.Name = "ShadowClone"
+            clone.Parent = workspace
+            clone:SetPrimaryPartCFrame(root.CFrame * CFrame.new(i*2, 0, -3))
+            for _, tool in pairs(clone:GetChildren()) do
+                if tool:IsA("Tool") then tool:Destroy() end
+            end
+            spawn(function()
+                for t = 1, 15 do wait(0.5)
+                    local nearest = nil
+                    local dist = 999
                     for _, mob in pairs(workspace:GetDescendants()) do
-                        if mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
-                            local dist = (mob.HumanoidRootPart.Position - hrp.Position).Magnitude
-                            if dist < 10 then
-                                game:GetService("VirtualInputManager"):SendKeyEvent(true, "Z", false, game)
+                        if mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") then
+                            local d = (clone.HumanoidRootPart.Position - mob.HumanoidRootPart.Position).Magnitude
+                            if d < dist then
+                                nearest = mob
+                                dist = d
                             end
                         end
                     end
-                end
-                wait(0.2)
-            end
-        end)
-    end
-end)
-
--- Magnet
-createBtn("🧲 Toggle Magnet", 90, function()
-    magnet = not magnet
-    if magnet then
-        spawn(function()
-            while magnet do
-                local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    for _, item in pairs(workspace:GetDescendants()) do
-                        if item:IsA("Tool") or item.Name:lower():find("drop") then
-                            local h = item:FindFirstChild("Handle")
-                            if h then h.CFrame = hrp.CFrame end
-                        end
+                    if nearest then
+                        clone:MoveTo(nearest.HumanoidRootPart.Position)
+                        pcall(function() nearest.Humanoid:TakeDamage(3) end)
                     end
                 end
-                wait(0.2)
-            end
-        end)
-    end
-end)
-
--- Auto Skill
-createBtn("🎮 Auto Skill Q/E/R/T", 140, function()
-    skill = not skill
-    if skill then
-        spawn(function()
-            while skill do
-                for _, k in ipairs({"Q","E","R","T"}) do
-                    game:GetService("VirtualInputManager"):SendKeyEvent(true, k, false, game)
-                end
-                wait(0.3)
-            end
-        end)
-    end
-end)
-
--- Auto Pickup
-createBtn("📦 Auto Pickup Tool", 190, function()
-    pickup = not pickup
-    if pickup then
-        spawn(function()
-            while pickup do
-                for _, tool in pairs(workspace:GetDescendants()) do
-                    if tool:IsA("Tool") and tool:FindFirstChild("Handle") then
-                        firetouchinterest(game.Players.LocalPlayer.Character.HumanoidRootPart, tool.Handle, 0)
-                        firetouchinterest(game.Players.LocalPlayer.Character.HumanoidRootPart, tool.Handle, 1)
-                    end
-                end
-                wait(0.3)
-            end
-        end)
-    end
-end)
-
--- Shadow Clone
-createBtn("👥 Spawn Shadow Clone x3", 240, function()
-    if clonespawned then return end
-    clonespawned = true
-    local plr = game.Players.LocalPlayer
-    local char = plr.Character
-    for i = 1, 3 do
-        local clone = char:Clone()
-        clone.Name = "ShadowClone_" .. i
-        clone.Parent = workspace
-        if clone:FindFirstChild("HumanoidRootPart") then
-            clone:SetPrimaryPartCFrame(char.HumanoidRootPart.CFrame * CFrame.new(i * 2, 0, 0))
-        end
-        spawn(function()
-            local target = nil
-            while clone and clone:FindFirstChild("Humanoid") and wait(0.2) do
-                if not target or not target:FindFirstChild("Humanoid") or target.Humanoid.Health <= 0 then
-                    target = nil
-                    local dist = math.huge
-                    for _, mob in pairs(workspace:GetDescendants()) do
-                        if mob:FindFirstChild("Humanoid") and mob:FindFirstChild("HumanoidRootPart") and mob.Humanoid.Health > 0 then
-                            local d = (clone.HumanoidRootPart.Position - mob.HumanoidRootPart.Position).Magnitude
-                            if d < dist then target = mob dist = d end
-                        end
-                    end
-                end
-                if target then
-                    clone.Humanoid:MoveTo(target.HumanoidRootPart.Position)
-                    game:GetService("VirtualInputManager"):SendKeyEvent(true, "Z", false, game)
-                end
-            end
-        end)
-    end
-end)
-
--- Auto Quest (FireServer ทุก Remote)
-createBtn("📜 Fire All Quest Events", 290, function()
-    for _, r in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
-        if r:IsA("RemoteEvent") then
-            pcall(function() r:FireServer() end)
+                clone:Destroy()
+            end)
         end
     end
 end)
 
--- Floating toggle
-openBtn.MouseButton1Click:Connect(function()
-    main.Visible = not main.Visible
+spawn(function() -- Magnet
+    while true do wait(1)
+        if not CFG.Magnet then continue end
+        local char = Character()
+        local root = char:FindFirstChild("HumanoidRootPart")
+        if not root then continue end
+
+        for _, item in pairs(workspace:GetDescendants()) do
+            if item:IsA("Tool") and item:FindFirstChild("Handle") then
+                item.Handle.CFrame = root.CFrame
+            end
+        end
+    end
 end)
+
+spawn(function() -- Auto Quest
+    while true do wait(3)
+        if not CFG.AutoQuest then continue end
+        for _, obj in pairs(game:GetDescendants()) do
+            if obj:IsA("RemoteEvent") and obj.Name:lower():find("quest") then
+                pcall(function()
+                    obj:FireServer()
+                end)
+            end
+        end
+    end
+end)
+
+spawn(function() -- Anti-AFK
+    while true do wait(30)
+        VirtualUser = game:GetService("VirtualUser")
+        VirtualUser:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        wait(1)
+        VirtualUser:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    end
+end)
+
+print("✅ Arise GUI Mobile Loaded.")
