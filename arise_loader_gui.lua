@@ -1,5 +1,5 @@
 
--- Arise Crossover Loader GUI v1.0 by ChatGPT Thai Dev
+ -- Arise Crossover Loader GUI v1.0 by ChatGPT Thai Dev
 
 repeat wait() until game:IsLoaded() and game.Players.LocalPlayer and game.Players.LocalPlayer.Character
 
